@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Yt Box</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #e0eafc, #cfdef3);
+            padding-top: 40px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            max-width: 600px;
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+            border: 2px solid #007bff;
+            /* Blue border */
+            transition: transform 0.2s ease;
+        }
+
+        .container:hover {
+            transform: scale(1.01);
+        }
+
+        .thumbnail {
+            width: 100%;
+            border-radius: 10px;
+            margin-top: 15px;
+            border: 2px solid #dee2e6;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .title-text {
+            margin-top: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            color: #333;
+        }
+
+        #message {
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .btn {
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container text-center">
+        <h2 class="mb-4 text-primary">🎬 Yt Box</h2>
+
+        <div class="input-group my-3">
+            <input type="text" id="urlInput" class="form-control" placeholder="Enter YouTube video URL">
+            <button id="fetchBtn" class="btn btn-primary">Fetch Info</button>
+        </div>
+
+        <img id="thumbnail" class="thumbnail" src="" alt="Thumbnail" style="display: none;">
+        <div id="videoTitle" class="title-text"></div>
+
+        <div class="my-3">
+            <select id="resolutionDropdown" class="form-select">
+                <option value="">Select Quality</option>
+            </select>
+        </div>
+
+        <div class="d-flex justify-content-center my-2">
+            <button id="downloadBtn" class="btn btn-success me-2">Download</button>
+            <button id="cancelBtn" class="btn btn-danger">Cancel</button>
+        </div>
+
+        <div id="message" class="text-center text-primary"></div>
+    </div>
+
+    <script>
+        const fetchBtn = document.getElementById('fetchBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const urlInput = document.getElementById('urlInput');
+        const thumbnail = document.getElementById('thumbnail');
+        const videoTitle = document.getElementById('videoTitle');
+        const dropdown = document.getElementById('resolutionDropdown');
+        const message = document.getElementById('message');
+
+        fetchBtn.addEventListener('click', () => {
+            const url = urlInput.value.trim();
+            if (!url) {
+                message.innerText = "Please enter a URL.";
+                return;
+            }
+            message.innerText = "Fetching info...";
+            fetch('/fetch_info', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'url=' + encodeURIComponent(url)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        message.innerText = "Error: " + data.error;
+                    } else {
+                        thumbnail.src = data.thumbnail;
+                        thumbnail.style.display = 'block';
+                        videoTitle.innerText = data.title;
+                        dropdown.innerHTML = '<option value="">Select Quality</option>';
+                        data.resolutions.forEach(res => {
+                            const option = document.createElement('option');
+                            option.value = res;
+                            option.text = res;
+                            dropdown.appendChild(option);
+                        });
+                        message.innerText = "Video info loaded.";
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    message.innerText = "Failed to fetch video info.";
+                });
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const resolution = dropdown.value;
+            if (!resolution) {
+                message.innerText = "Please select a quality!";
+                return;
+            }
+            message.innerText = "Downloading...";
+            fetch('/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'resolution=' + encodeURIComponent(resolution)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        message.innerText = "Error: " + data.error;
+                    } else {
+                        message.innerText = data.message;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    message.innerText = "Failed to start download.";
+                });
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            window.location.reload();
+        });
+    </script>
+
+</body>
+
+</html>
